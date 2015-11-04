@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#PBS -S /bin/sh
+#PBS -N "enkf"
+#PBS -A nn9385k
+#PBS -l walltime=0:59:00,mppwidth=32
+#PBS -m a
+#PBS -M msh065@uib.no
+#PBS -o enkf.out
+#PBS -e enkf.err
+cd  /work/${USER}/noresm/ANALYSIS/
+aprun -n 1 -m 1000M ./ensave forecast NENS 
+aprun -n 32 -a xt EnKF enkf.prm
+wait
+mv forecast_avg.nc forecast_avg.nc_tmp
+aprun -n 1 -m 1000M ./ensave forecast NENS 
+mv forecast_avg.nc analysis_avg.nc
+mv forecast_avg.nc_tmp forecast_avg.nc
+echo "FINISHED"
+

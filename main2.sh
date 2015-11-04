@@ -4,12 +4,12 @@
 #===============================================================================
 # changes due to the heave load of the system ...
 
-#PBS -A nn9039k
+#PBS -A nn9385k
 #PBS -W group_list=noresm
 #PBS -N r_NCPM_FF_DA
 #PBS -q batch
-#PBS -l mppwidth=2560
-#PBS -l walltime=24:00:00
+#PBS -l mppwidth=32
+#PBS -l walltime=1:00:00
 ####PBS -l mppwidth=512
 ####PBS -l walltime=1:00:00
 #PBS -j oe
@@ -17,6 +17,8 @@
 
 set -x 
 source ${HOME}/NorESM/EnKF_Script/personal_setting.sh
+
+export WORKDIR=${WORKDIR}
 
 if [ ! -d ${WORKDIR}/ANALYSIS/ ] ; then
       mkdir -p ${WORKDIR}/ANALYSIS  || { echo "Could not create ANALYSIS dir" ; exit 1 ; }
@@ -81,7 +83,7 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
           ln -sf ${WORKSHARED}/bin/ensave .
           ln -sf ${WORKSHARED}/bin/ensstat_field .
           ./ensstat_field forecast ${ENSSIZE}
-          cat ${WORKSHARED}/EnKF_Script/pbs_enkf.sh_nocopy_mal | sed  "s/NENS/${ENSSIZE}/" | sed  "s/nnXXXXk/${CPUACCOUNT}/"  > pbs_enkf.sh
+          cat /home/uib/earnest/NorESM/EnKF_Script/pbs_enkf.sh_nocopy_mal | sed  "s/NENS/${ENSSIZE}/" | sed  "s/nnXXXXk/${CPUACCOUNT}/"  > pbs_enkf.sh
           chmod 755 pbs_enkf.sh
           cp  -f ${WORKSHARED}/Input/EnKF/analysisfields.in .
           cat ${WORKSHARED}/Input/EnKF/enkf.prm_mal | sed  "s/XXX/${RFACTOR}/" > enkf.prm
@@ -159,8 +161,8 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
 #       ln -sf  /home/uib/earnest/NorESM/Script/Integrate_F19_tn21_1_month_superjob.sh .
 #       ./Integrate_F19_tn21_1_month_superjob.sh
 
-for mem in `seq -w 1 30 `; do
-  IMEM=$mem
+for mem in `seq 1 ${ENSSIZE} `; do
+  IMEM=`echo 00$mem | tail -c3 `
   cd ${HOMEDIR}/cases/${VERSION}${IMEM}
   #./${VERSION}${IMEM}.${machine}.submit
   jobid[${mem}]=`qsub ${VERSION}${IMEM}.${machine}.run`
@@ -172,14 +174,14 @@ done
   finished=0
   while (( ! finished )); do 
     finished=1
-    for (( proc = 1; proc <= 30; ++proc )) ; do 
+    for (( proc = 1; proc <= ${ENSSIZE}  ; ++proc )) ; do 
       if [ -z "${jobid[$proc]}" ]; then
         continue
       fi
       answer=`qstat ${jobid[$proc]} 2>/dev/null | tail -n 1 | awk '{print $5}'`
-      if ( [ "${answer}" == "Q" ] || [ "${answer}" == "R" ] ); then
+      if ( [ "${answer}" != "Q" ] && [ "${answer}" != "R" ] ); then
         jobid[$proc]=
-        echo -n " Noresm job finished for member " $mem
+        echo -n " Noresm job finished for member " $proc
       else
         finished=0
         sleep 60
@@ -215,12 +217,12 @@ done
    fi
    SKIPPROP=1
   # if [ $FIRST_INTERGRATION -a $hybrid_run ] ;then
-  #    for i in `seq 01 ${ENSSIZE}`
-  #    do
-  #        mem=`echo 0$i | tail -3c`
-  #        cd ${HOMEDIR}/cases/${VERSION}${mem}/
-  #        xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
-  #    done
+      for i in `seq 01 ${ENSSIZE}`
+      do
+          mem=`echo 0$i | tail -3c`
+          cd ${HOMEDIR}/cases/${VERSION}${mem}/
+          xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
+      done
   #    FIRST_INTERGRATION=0
   # fi
  fi
