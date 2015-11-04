@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#PBS -S /bin/sh
+#PBS -N "enkf"
+#PBS -A nn9385k
+#PBS -l walltime=0:59:00,mppwidth=32
+#PBS -m a
+#PBS -M msh065@gui.no
+#PBS -o enkf.out
+#PBS -e enkf.err
+cd ${WORKDIR}/ANALYSIS/
+aprun -n 32 -a xt EnKF enkf.prm
+echo "FINISHED"
+aprun -n 1 -m 1000M ./ensave forecast NENS 
+aprun -n 1 -m 1000M ./ensave analysis NENS 
+echo "FINISHED"
+sleep 1s
+wait
