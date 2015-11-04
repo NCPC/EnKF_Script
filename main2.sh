@@ -16,7 +16,7 @@
 #PBS -S /bin/csh
 
 set -x 
-source ${HOME}/NorESM/Script/personal_setting.sh
+source ${HOME}/NorESM/EnKF_Script/personal_setting.sh
 
 if [ ! -d ${WORKDIR}/ANALYSIS/ ] ; then
       mkdir -p ${WORKDIR}/ANALYSIS  || { echo "Could not create ANALYSIS dir" ; exit 1 ; }
@@ -60,23 +60,28 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
               ln -sf ${WORKSHARED}/bin/prep_obs_FF prep_obs
               if (( ${SUPERLAYER} ))
               then
-                 ln -sf ${WORKSHARED}/bin/EnKF_Yiguo_FF EnKF
+                 ln -sf /home/uib/earnest/NorESM/bin/EnKF_Yiguo_FF EnKF
               else
                  ln -sf ${HOMEDIR}/bin/EnKF_FF EnKF
               fi
-              ln -sf ${WORKSHARED}/Obs/${OBSTYPE}/${PRODUCER}/Anomaly/${OBSTYPE}_avg_${REF_PERIOD}.nc mean_obs.nc || { echo "Error ${WORKSHARED}/Obs/${OBSTYPE}/${PRODUCER}/Anomaly/SST_avg_${mm}.nc missing, we quit" ; exit 1 ; }
-              ln -sf ${WORKSHARED}/Input/NorESM/${CASEDIR}_${PRODUCER}_anom/Free-average${REF_PERIOD}.nc mean_mod.nc || { echo "Error ${WORKSHARED}/Input/NorESM/${CASEDIR}_${PRODUCER}_anom/${OBSTYPE}_ave-${mm}.nc  missing, we quit" ; exit 1 ; }
+             if (( ${MONTHLY} ))
+             then
+                ln -sf ${WORKSHARED}/Obs/${OBSTYPE}/${PRODUCER}/Anomaly/${OBSTYPE}_avg_${mm}-${REF_PERIOD}.nc mean_obs.nc || { echo "Error ${WORKSHARED}/Obs/${OBSTYPE}/${PRODUCER}/Anomaly/SST_avg_${mm}.nc missing, we quit" ; exit 1 ; }
+                ln -sf ${WORKSHARED}/Input/NorESM/${CASEDIR}_${PRODUCER}_anom/Free-average${mm}-${REF_PERIOD}.nc mean_mod.nc || { echo "Error ${WORKSHARED}/Input/NorESM/${CASEDIR}_${PRODUCER}_anom/${OBSTYPE}_ave-${mm}.nc  missing, we quit" ; exit 1 ; }
+             fi
+
+#              ln -sf ${WORKSHARED}/Obs/${OBSTYPE}/${PRODUCER}/Anomaly/${OBSTYPE}_avg_${REF_PERIOD}.nc mean_obs.nc || { echo "Error ${WORKSHARED}/Obs/${OBSTYPE}/${PRODUCER}/Anomaly/SST_avg_${mm}.nc missing, we quit" ; exit 1 ; }
+#              ln -sf ${WORKSHARED}/Input/NorESM/${CASEDIR}_${PRODUCER}_anom/Free-average${REF_PERIOD}.nc mean_mod.nc || { echo "Error ${WORKSHARED}/Input/NorESM/${CASEDIR}_${PRODUCER}_anom/${OBSTYPE}_ave-${mm}.nc  missing, we quit" ; exit 1 ; }
           fi
           cat ${WORKSHARED}/Input/EnKF/infile.data.${OBSTYPE}.${PRODUCER} | sed  "s/yyyy/${yr_assim}/" | sed  "s/mm/${mm}/" > infile.data
           ln -sf  $GRIDPATH .
           #${WORKSHARED}/Script/Link_forecast_nocopy.sh ${yr} ${month}
-exit 11
-          /home/uib/earnest/NorESM/Script/Link_forecast_nocopy.sh ${yr} ${month}
+          /home/uib/earnest/NorESM/EnKF_Script/Link_forecast_nocopy.sh ${yr} ${month}
           ./prep_obs 
           ln -sf ${WORKSHARED}/bin/ensave .
           ln -sf ${WORKSHARED}/bin/ensstat_field .
           ./ensstat_field forecast ${ENSSIZE}
-          cat ${WORKSHARED}/Script/pbs_enkf.sh_nocopy_mal | sed  "s/NENS/${ENSSIZE}/" | sed  "s/nnXXXXk/${CPUACCOUNT}/"  > pbs_enkf.sh
+          cat ${WORKSHARED}/EnKF_Script/pbs_enkf.sh_nocopy_mal | sed  "s/NENS/${ENSSIZE}/" | sed  "s/nnXXXXk/${CPUACCOUNT}/"  > pbs_enkf.sh
           chmod 755 pbs_enkf.sh
           cp  -f ${WORKSHARED}/Input/EnKF/analysisfields.in .
           cat ${WORKSHARED}/Input/EnKF/enkf.prm_mal | sed  "s/XXX/${RFACTOR}/" > enkf.prm
@@ -102,7 +107,7 @@ exit 11
           fi
           echo 'Finished with EnKF; start post processing'
           date
-          cat ${HOME}/NorESM/Script/fixenkf_${RES}_v3.sh_mal | sed  "s/NENS/${ENSSIZE}/g"  > fixenkf.sh
+          cat ${HOME}/NorESM/EnKF_Script/fixenkf_${RES}_v3.sh_mal | sed  "s/NENS/${ENSSIZE}/g"  > fixenkf.sh
           chmod 755 fixenkf.sh
           ln -sf ${WORKSHARED}/bin/micom_serial_init_${RES}_link micom_serial_init
           ln -sf ${WORKSHARED}/bin/launcher${ENSSIZE} launcher

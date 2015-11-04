@@ -2,8 +2,8 @@ HOMEDIR=${HOME}/NorESM/
 WORKDIR=/work/${USER}/noresm/
 WORKSHARED=/work/shared/nn9039k/NorCPM/
 ARCHIVE=/work/${USER}/archive/
-ENSSIZE=30
-#ENSSIZE=2 # MS testing ...
+#ENSSIZE=30
+ENSSIZE=2 # MS testing ...
 CASEDIR='NorCPM_F19_tn21'
 if [ "$CASEDIR" == "NorCPM_ME" ] ; then
    GRIDPATH=/work/shared/noresm/inputdata/ocn/micom/gx1v6/20101119/grid.nc
