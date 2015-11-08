@@ -3,7 +3,7 @@ WORKDIR=/work/${USER}/noresm/
 WORKSHARED=/work/shared/nn9039k/NorCPM/
 ARCHIVE=/work/${USER}/archive/
 #ENSSIZE=30
-ENSSIZE=2 # MS testing ...
+ENSSIZE=30 # MS testing ...
 CASEDIR='NorCPM_F19_tn21'
 if [ "$CASEDIR" == "NorCPM_ME" ] ; then
    GRIDPATH=/work/shared/noresm/inputdata/ocn/micom/gx1v6/20101119/grid.nc
@@ -35,7 +35,7 @@ REF_PERIOD='1980-2000' # for calculating anomalies
 #SUPERLAYER='1'  #1 means you use the new fix from Yiguo
 SUPERLAYER='1' # MS testing ...
 
-CPUACCOUNT=nn9039k
+CPUACCOUNT=nn9385k
 machine='hexagon_intel'
 CODEVERSION='projectEPOCASA-5/noresm/'
 
@@ -66,11 +66,11 @@ hist_freq_date=10
 SKIPASSIM=1 #if 0 we skip the first assimilation
 SKIPPROP=1 #if 0 we skip the first model intergration
 #start_date=2001-03-15-00000
-start_date=1970-01-15-00000  # MS testing ...
+start_date=1971-02-15-00000  # MS testing ...
 short_start_date=`echo $start_date | cut -c1-10`
 STARTMONTH=`echo $start_date | cut -c6-7`
 STARTYEAR=`echo $start_date | cut -c1-4` 
-RFACTOR=8  #Slow assimilation start
+RFACTOR=1  #Slow assimilation start
 nbbatch=8  #Number of group of job going into the queue
 ENDYEAR=2010
 export WORKDIR HOMEDIR VERSION ENSSIZE

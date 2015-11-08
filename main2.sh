@@ -43,7 +43,7 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
           OBSTYPE=${OBSLIST[$iobs]}
           PRODUCER=${PRODUCERLIST[$iobs]}
           MONTHLY=${MONTHLY_ANOM[$iobs]}
-             ln -sf ${WORKSHARED}/Obs/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc  .  || { echo "${WORKDIR}/OBS/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc, we quit" ; exit 1 ; }
+             ln -sf ${WORKSHARED}/Obs/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc  .  || { echo "${WORKDIR}/OBS/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc, we quit" | mail -s "${WORKDIR}/OBS/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc, we quit" earnestshen@gmail.com  exit 1 ; }
           if (( ${ANOMALYASSIM} ))
           then
              ln -sf ${WORKSHARED}/bin/prep_obs_anom prep_obs
@@ -91,6 +91,7 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
           #launch EnKF
           set -e 
     #      ./pbs_enkf.sh
+
           enkfid=`qsub ./pbs_enkf.sh`
           sleep 1s
           enkfans="R"
@@ -104,7 +105,7 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
           ans=`diff forecast_avg.nc analysis_avg.nc`
           if [ -z "${ans}" ] 
           then
-                echo "There has been no update, we quit!!"
+                echo "There has been no update, we quit!!" | mail -s "There has been no update, we quit!!" earnestshen@gmail.com
                 exit 1
           fi
           echo 'Finished with EnKF; start post processing'
@@ -136,7 +137,7 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
           ans=`diff ${WORKDIR}/RESULT/${yr}_${mm}/fix_analysis_avg.nc ${WORKDIR}/RESULT/${yr}_${mm}/analysis_avg.nc`
           if [ -z "${ans}" ]
             then
-            echo "There has been no fix update, we quit!!"
+            echo "There has been no fix update, we quit!!" | mail -s "Missing fix update" earnestshen@gmail.com
             echo "Delete FINITO"
             rm -f FINITO
             exit 1;
@@ -161,15 +162,30 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
 #       ln -sf  /home/uib/earnest/NorESM/Script/Integrate_F19_tn21_1_month_superjob.sh .
 #       ./Integrate_F19_tn21_1_month_superjob.sh
 
-for mem in `seq 1 ${ENSSIZE} `; do
-  IMEM=`echo 00$mem | tail -c3 `
-  cd ${HOMEDIR}/cases/${VERSION}${IMEM}
+#for mem in `seq 1 ${ENSSIZE} `; do
+#  IMEM=`echo 00$mem | tail -c3 `
+#  cd ${HOMEDIR}/cases/${VERSION}${IMEM}
+#  #./${VERSION}${IMEM}.${machine}.submit
+#  jobid[${mem}]=`qsub ${VERSION}${IMEM}.${machine}.run`
+#  sleep 10s
+#  let mem=mem+1
+#  wait
+#done
+
+
+for mem in `seq 1 8 `; do
+  IMEM=$mem
+  cd ${HOMEDIR}/cases
   #./${VERSION}${IMEM}.${machine}.submit
-  jobid[${mem}]=`qsub ${VERSION}${IMEM}.${machine}.run`
+  jobid[${mem}]=`qsub  NorCPM_F19_tn21_pak${mem}.hexagon_intel.run `
   sleep 10s
   let mem=mem+1
   wait
 done
+
+
+
+
 
   finished=0
   while (( ! finished )); do 
@@ -207,7 +223,7 @@ done
           cd ${WORKDIR}/${VERSION}${mem}/run/
           if [ ! -f "${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc" ] 
           then
-             echo "The file  ${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc is missing !! we quit"
+             echo "The file  ${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc is missing !! we quit" | mail -s "The file  ${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc is missing !! we quit" earnestshen@gmail.com
              exit
           fi
        done
