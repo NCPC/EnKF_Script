@@ -6,7 +6,7 @@
 #PBS -l mppwidth=32
 #PBS -l mppnppn=16
 #PBS -l mppmem=2000MB
-#PBS -l walltime=00:40:00
+#PBS -l walltime=01:00:00
 #PBS -o fixenkf.out
 #PBS -e fixenkf.err
 

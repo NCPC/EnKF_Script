@@ -43,7 +43,7 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
           OBSTYPE=${OBSLIST[$iobs]}
           PRODUCER=${PRODUCERLIST[$iobs]}
           MONTHLY=${MONTHLY_ANOM[$iobs]}
-             ln -sf ${WORKSHARED}/Obs/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc  .  || { echo "${WORKDIR}/OBS/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc, we quit" | mail -s "${WORKDIR}/OBS/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc, we quit" earnestshen@gmail.com  exit 1 ; }
+             ln -sf ${WORKSHARED}/Obs/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc  .  || { echo "${WORKDIR}/OBS/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc, we quit" | mail -s "`date`:  ${WORKDIR}/OBS/${OBSTYPE}/${PRODUCER}/${yr_assim}_${mm}.nc, we quit" earnestshen@gmail.com  exit 1 ; }
           if (( ${ANOMALYASSIM} ))
           then
              ln -sf ${WORKSHARED}/bin/prep_obs_anom prep_obs
@@ -105,7 +105,7 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
           ans=`diff forecast_avg.nc analysis_avg.nc`
           if [ -z "${ans}" ] 
           then
-                echo "There has been no update, we quit!!" | mail -s "There has been no update, we quit!!" earnestshen@gmail.com
+                echo "There has been no update, we quit!!" | mail -s "`date`: There has been no update, we quit!!" earnestshen@gmail.com
                 exit 1
           fi
           echo 'Finished with EnKF; start post processing'
@@ -137,7 +137,7 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
           ans=`diff ${WORKDIR}/RESULT/${yr}_${mm}/fix_analysis_avg.nc ${WORKDIR}/RESULT/${yr}_${mm}/analysis_avg.nc`
           if [ -z "${ans}" ]
             then
-            echo "There has been no fix update, we quit!!" | mail -s "Missing fix update" earnestshen@gmail.com
+            echo "There has been no fix update, we quit!!" | mail -s "`date`: Missing fix update" earnestshen@gmail.com
             echo "Delete FINITO"
             rm -f FINITO
             exit 1;
@@ -217,16 +217,69 @@ done
           ms=`echo 0$tmp | tail -3c`
        fi
 
+
+       failMems=""
        for (( proc = 1; proc <= ${ENSSIZE}; ++proc ))
        do
           mem=`echo 0$proc | tail -3c`
           cd ${WORKDIR}/${VERSION}${mem}/run/
           if [ ! -f "${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc" ] 
           then
-             echo "The file  ${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc is missing !! we quit" | mail -s "The file  ${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc is missing !! we quit" earnestshen@gmail.com
-             exit
+         #    echo "The file  ${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc is missing !! we quit" | mail -s "`date`: The file  ${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc is missing !! we quit" earnestshen@gmail.com
+           # exit 
+            failMems=${failMems}" "${mem}
           fi
        done
+
+for mem in ${failMems}; do 
+  mm=`echo ${mem} | bc -l `
+  cd ${WORKDIR}/${VERSION}${mem}/run/
+  micomR=`ls --color=no ${VERSION}${mem}.micom.r.* `
+  old_date=`echo ${micomR} | awk -F "." '{print $(NF-1)}'`
+  mv ${micomR} ana_${micomR}
+  rm ${VERSION}${mem}.*
+  cp ../../../archive/${VERSION}${mem}/rest/${old_date}/* .
+  rm ${micomR}
+  mv ana_${micomR} ${micomR}
+  cd ${HOMEDIR}/cases/${VERSION}${mem}
+  jobid[${mm}]=`qsub  ${VERSION}${mem}.hexagon_intel.run `
+  sleep 5s
+done
+  finished=0
+  while (( ! finished )); do
+    finished=1
+    for proc in ${failMems}; do
+      proc=`echo ${proc} | bc -l `
+      if [ -z "${jobid[$proc]}" ]; then
+        continue
+      fi
+      answer=`qstat ${jobid[$proc]} 2>/dev/null | tail -n 1 | awk '{print $5}'`
+      if ( [ "${answer}" != "Q" ] && [ "${answer}" != "R" ] ); then
+        jobid[$proc]=
+        echo -n " Noresm job finished for member " $proc
+      else
+        finished=0
+        sleep 60
+        break
+      fi
+    done
+  done
+
+       for (( proc = 1; proc <= ${ENSSIZE}; ++proc ))
+       do
+          mem=`echo 0$proc | tail -3c`
+          cd ${WORKDIR}/${VERSION}${mem}/run/
+          if [ ! -f "${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc" ]
+          then
+             echo "The file  ${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc is missing !! we quit" | mail -s "`date`: The file  ${VERSION}${mem}.micom.r.${ys}-${ms}-15-00000.nc is missing !! we quit" earnestshen@gmail.com
+            exit
+          fi
+       done
+
+
+
+
+
        echo 'All integration jobs completed'
        date
        #mv ${WORKDIR}/NorCPM_ensemble.o* ${WORKDIR}/Log/
