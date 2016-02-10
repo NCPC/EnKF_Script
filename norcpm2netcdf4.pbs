@@ -1,11 +1,11 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 ### CUSTOMIZE ###
 
 #PBS -A nn9039k
-#PBS -N norcpm2netcdf4
+#PBS -N r_norcpm2netcdf4
 #PBS -l mppwidth=16
-#PBS -l walltime=20:00:00
+#PBS -l walltime=01:00:00
 #PBS -S /bin/bash
 #PBS -V
 
@@ -58,7 +58,7 @@ for elm in atm cpl ice lnd ocn
 do
   mkdir -p $2/${elm}/hist
   cd $1/${elm}/hist/
-  for ncfile in `find . -name ${VERSION}${IMEM}*.nc -print`
+  for ncfile in `find . -name "${VERSION}${IMEM}*.nc" -print`
   do
      echo converting $ncfile 
     while :; do
@@ -73,7 +73,7 @@ do
 done
 mkdir -p $2/rest/
 cd $1/rest
-for folder in `find . -name ????-??-??-00000 -print `
+for folder in `find . -name "????-??-??-00000" -print `
 do
      echo taring  $1/$folder 
       while :; do

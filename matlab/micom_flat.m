@@ -7,8 +7,8 @@ error(nargoutchk(0,0,nargout))
 global pclon pclat MAP_PROJECTION
 
 if isempty(pclon) & isempty(pclat)
-  pclon=reshape(ncgetvar('grid.nc','pclon'),[],4)';
-  pclat=reshape(ncgetvar('grid.nc','pclat'),[],4)';
+  pclon=reshape(ncread('grid.nc','pclon'),[],4)';
+  pclat=reshape(ncread('grid.nc','pclat'),[],4)';
 end
 
 if isempty(MAP_PROJECTION)

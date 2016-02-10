@@ -16,8 +16,8 @@
 #PBS -S /bin/csh
 
 set -x 
-source ${HOME}/NorESM/EnKF_Script/personal_setting.sh
-
+#source ${HOME}/NorESM/EnKF_Script/personal_setting.sh
+source ${HOME}/NorESM/EnKF_Script/personal_SD_setting.sh
 export WORKDIR=${WORKDIR}
 
 if [ ! -d ${WORKDIR}/ANALYSIS/ ] ; then
@@ -59,7 +59,7 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
                 ln -sf ${WORKSHARED}/Input/NorESM/${CASEDIR}_${PRODUCER}_anom/Free-average${mm}-${REF_PERIOD}.nc mean_mod.nc || { echo "Error ${WORKSHARED}/Input/NorESM/${CASEDIR}_${PRODUCER}_anom/${OBSTYPE}_ave-${mm}.nc  missing, we quit" ; exit 1 ; }
              fi
            else
-              ln -sf ${WORKSHARED}/bin/prep_obs_FF prep_obs
+              ln -sf ${WORKSHARED}/Code/EnKF-MPI-TOPAZ_Yiguo_no_copy/Prep_Routines/prep_obs prep_obs
               if (( ${SUPERLAYER} ))
               then
                  ln -sf /home/uib/earnest/NorESM/bin/EnKF_Yiguo_FF EnKF
@@ -93,6 +93,8 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
     #      ./pbs_enkf.sh
 
           enkfid=`qsub ./pbs_enkf.sh`
+
+
           sleep 1s
           enkfans="R"
           while ( [ "${enkfans}" == "Q" ] || [ "${enkfans}" == "R" ] ) ; do
@@ -121,7 +123,8 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
             mkdir -p ${WORKDIR}/RESULT/${yr}_${mm}  || { echo "Could not create RESULT/${yr}_${mm} dir" ; exit 1 ; }
           fi
           cd ${WORKDIR}/ANALYSIS/
-          mv enkf_diag.nc analysis_avg.nc forecast_avg.nc observations-SST.nc ensstat_field.nc ${WORKDIR}/RESULT/${yr}_${mm}
+          cdo sub forecast_avg.nc analysis_avg.nc analysis_diff.nc
+          mv enkf_diag.nc analysis_avg.nc forecast_avg.nc observations-SST.nc ensstat_field.nc analysis_diff.nc ${WORKDIR}/RESULT/${yr}_${mm}
           rm -f  FINITO
 #          ./fixenkf.sh 
           fixenkfid=`qsub ./fixenkf.sh `
@@ -129,7 +132,7 @@ for year in `seq ${STARTYEAR} ${ENDYEAR}`; do
           while ( [ "${fixenkfans}" == "Q" ] || [ "${fixenkfans}" == "R" ] ); do
             fixenkfans=`qstat ${fixenkfid} 2>/dev/null | tail -n 1 | awk '{print $5}'`
             echo "waiting for fix EnKF-SST"
-            sleep 5s
+            sleep 15s
           done
           ./ensave forecast $ENSSIZE &
           wait
@@ -238,10 +241,10 @@ for mem in ${failMems}; do
   old_date=`echo ${micomR} | awk -F "." '{print $(NF-1)}'`
   mv ${micomR} ana_${micomR}
   rm ${VERSION}${mem}.*
-  cp ../../../archive/${VERSION}${mem}/rest/${old_date}/* .
+  cp ../../../archive/${ParentP}/${VERSION}${mem}/rest/${old_date}/* .
   rm ${micomR}
   mv ana_${micomR} ${micomR}
-  cd ${HOMEDIR}/cases/${VERSION}${mem}
+  cd ${HOMEDIR}/cases/${ParentP}/${VERSION}${mem}
   jobid[${mm}]=`qsub  ${VERSION}${mem}.hexagon_intel.run `
   sleep 5s
 done
@@ -289,7 +292,7 @@ done
       for i in `seq 01 ${ENSSIZE}`
       do
           mem=`echo 0$i | tail -3c`
-          cd ${HOMEDIR}/cases/${VERSION}${mem}/
+          cd ${HOMEDIR}/cases/${ParentP}/${VERSION}${mem}/
           xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
       done
   #    FIRST_INTERGRATION=0

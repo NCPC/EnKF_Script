@@ -2,7 +2,7 @@
 set -ex
 #This script will create an ensemble of folder of Noresm without duplicating Build directory.
 #Francois Counillon 6/10/2011
-source ${HOME}/NorESM/Script/personal_setting.sh
+source ${HOME}/NorESM/EnKF_Script/personal_setting.sh
 if [ -d ${HOMEDIR}/cases/${VERSION}01 ]
 then
    echo "There is already an Ensemble structure existing for " $VERSION
